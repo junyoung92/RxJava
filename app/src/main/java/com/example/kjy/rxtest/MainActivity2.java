@@ -6,7 +6,6 @@ import android.util.Log;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
-import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
 import rx.Observable;
@@ -32,20 +31,21 @@ public class MainActivity2 extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main2);
 
-        // CreatingObservables();
+        //  CreatingObservables();
         // TransformingObservables();
-        // FilteringObservables();
-        //CombiningObservables();
-        // ErrorHandlingOperators();
-        // ObservableUtilityOperators();
-        // ConditionalAndBooleanOperators();
-        // MathematicalAndAggregateOperators();
-        ConnectableObservableOperators();
+        FilteringObservables();
+//        CombiningObservables();
+//        ErrorHandlingOperators();
+//        ObservableUtilityOperators();
+//        ConditionalAndBooleanOperators();
+//        MathematicalAndAggregateOperators();
+//        ConnectableObservableOperators();
     }
 
     private void CreatingObservables() {
         createObservable();
         deferObservable();
+        emptyNeverThrowObservable();
         fromObservable();
         intervalObservable();
         justObservable();
@@ -145,14 +145,21 @@ public class MainActivity2 extends AppCompatActivity {
         }).subscribe(s -> Log.i("deferObservable", s));
     }
 
+    private void emptyNeverThrowObservable() {
+        Observable.empty().subscribe(o -> Log.i("emptyObservable", "onNext"), throwable -> Log.i("emptyObservable", "onError"), () -> Log.i("emptyObservable", "onCompleted"));  //onCompleted
+        Observable.never().subscribe(o -> Log.i("neverObservable", "onNext"), throwable -> Log.i("neverObservable", "onError"), () -> Log.i("neverObservable", "onCompleted"));
+        Observable.error(new Throwable()).subscribe(o -> Log.i("throwObservable", "onNext"), throwable -> Log.i("throwObservable", "onError"), () -> Log.i("throwObservable", "onCompleted"));  //onError
+    }
+
     private void fromObservable() {
         Observable.from(fruits).subscribe(string -> Log.i("fromObservable", string));
     }
 
     private void intervalObservable() {
         PublishSubject<Long> publishSubject = PublishSubject.create();
-        publishSubject.subscribe(time -> Log.i("intervalObservable", time + ""));
+        publishSubject.subscribe(time -> Log.i("intervalObservable1", time + ""));
         Observable.interval(1, TimeUnit.SECONDS).take(5).subscribe(time -> publishSubject.onNext(time));
+        Observable.interval(2, TimeUnit.SECONDS).take(5).subscribe(time -> Log.i("intervalObservable2", time + ""));
     }
 
     private void justObservable() {
@@ -168,11 +175,13 @@ public class MainActivity2 extends AppCompatActivity {
 
     private void repeatObservable() {
         Observable<String> repeatObservable = Observable.just("repeatObservable");
-        repeatObservable.repeat(5).subscribe(string -> Log.i("repeatObservable", string));
+        repeatObservable.repeat(5).subscribe(string -> Log.i("repeatObservable1", string));
+
+        Observable.from(colors).repeatWhen(observable -> observable).take(10).subscribe(s -> Log.i("repeatObservable2", s));
     }
 
     private void timerObservable() {
-        Observable.timer(3, TimeUnit.SECONDS).repeat(3).subscribe(num -> Log.i("timerObservable", "timerObservable"));
+        Observable.timer(3, TimeUnit.SECONDS).repeat(3).subscribe(num -> Log.i("timerObservable", "timerObservable")); //Observable.interval(3, TimeUnit.SECONDS).subscribe(num -> Log.i("timerObservable", "intervalObservable"));
     }
 
     /* TransformingObservables */
@@ -192,7 +201,6 @@ public class MainActivity2 extends AppCompatActivity {
             }
         }).buffer(4).subscribe(list -> {
             Log.i("bufferObservable2", list.toString());
-
         });
     }
 
@@ -222,11 +230,13 @@ public class MainActivity2 extends AppCompatActivity {
     }
 
     private void mapObservable() {
-        Observable.from(colors).map(string -> string.length()).subscribe(num -> Log.i("mapObservable", num + ""));
+        Observable.from(colors).map(string -> string.length()).subscribe(num -> Log.i("mapObservable1", num + ""));
+        Observable.from(colors).map(string -> string + " " + string.toUpperCase()).subscribe(string -> Log.i("mapObservable2", string));
     }
 
     private void scanObservable() {
-        Observable.from(colors).repeat(2).scan((str1, str2) -> str1 + " " + str2).subscribe(string -> Log.i("scanObservable", string));
+        Observable.from(colors).repeat(2).scan((str1, str2) -> str1 + " " + str2).subscribe(string -> Log.i("scanObservable1", string));
+        Observable.from(colors).scan("Color :", (str1, str2) -> str1 + " " + str2).subscribe(string -> Log.i("scanObservable2", string));
     }
 
     private void windowObservable() {
@@ -237,9 +247,10 @@ public class MainActivity2 extends AppCompatActivity {
             }
         }).window(4).subscribe(objectObservable -> {
             objectObservable.toList().subscribe(list -> {
-                Log.i("windowObservable2", list.toString());
+                Log.i("windowObservable1", list.toString());
             });
         });
+        Observable.interval(1, TimeUnit.SECONDS).window(5, 10, TimeUnit.SECONDS).take(30, TimeUnit.SECONDS).subscribe(longObservable -> longObservable.toList().subscribe(longs -> Log.i("windowObservable2", longs.toString())));
     }
 
     /* FilteringObservables */
@@ -247,27 +258,33 @@ public class MainActivity2 extends AppCompatActivity {
         PublishSubject<String> publishSubject = PublishSubject.create();
         publishSubject.debounce(2, TimeUnit.SECONDS).take(10).subscribe(string -> Log.i("debounceObservable", string));
 
-        Observable.interval(8, TimeUnit.SECONDS).subscribe(time -> publishSubject.onNext("time1  " + time + ""));
+        Log.i("debounceObservable", "start");
+        Observable.interval(5, TimeUnit.SECONDS).subscribe(time -> publishSubject.onNext("time1  " + time + ""));
         Observable.interval(6, TimeUnit.SECONDS).subscribe(time -> publishSubject.onNext("time2  " + time + ""));
     }
 
     private void distinctObservable() {
-        Observable.from(numbers).distinct().subscribe(num -> Log.i("distinctObservable", num + ""));
+        Observable.from(numbers).distinct().subscribe(num -> Log.i("distinctObservable1", num + ""));
+        Observable.from(fruits).distinct(String::length).subscribe(integer -> Log.i("distinctObservable2", integer + ""));
         Observable.from(numbers).distinctUntilChanged().subscribe(num -> Log.i("distinctUntilChanged", num + ""));
     }
 
     private void elementAtObservable() {
-        Observable.from(fruits).elementAt(2).subscribe(fruit -> Log.i("elementAtObservable", fruit));
-        Observable.from(fruits).elementAtOrDefault(12, "null").subscribe(fruit -> Log.i("elementAtOrDefault", fruit));
+        Observable.from(fruits).elementAt(2).subscribe(fruit -> Log.i("elementAtObservable1", fruit));
+        Observable.from(fruits).elementAt(12).subscribe(fruit -> Log.i("elementAtObservable2", fruit), throwable -> Log.i("elementAtObservable", "onError : " + throwable.toString()));
+        Observable.from(fruits).elementAtOrDefault(2, "default").subscribe(fruit -> Log.i("elementAtOrDefault1", fruit));
+        Observable.from(fruits).elementAtOrDefault(12, "default").subscribe(fruit -> Log.i("elementAtOrDefault2", fruit));
     }
 
     private void filterObservable() {
-        Observable.from(fruits).filter(fruit -> fruit.length() > 5).subscribe(string -> Log.i("filterObservable", string));
-
+        Observable.from(fruits).filter(fruit -> fruit.length() > 5).subscribe(string -> Log.i("filterObservable1", string));
+        Observable.just(1, 2, 3, fruits, "A", "b").ofType(Integer.class).subscribe(o -> Log.i("filterObservable2", o.toString()));
+        Observable.just(1, 2, 3, fruits, "a", "b").ofType(String.class).map(string -> string.toUpperCase() + "(" + string + ")").subscribe(o -> Log.i("filterObservable3", o.toString()));
     }
 
     private void firstObservable() {
         Observable.from(fruits).first().subscribe(first -> Log.i("firstObservable", first));
+        Observable.empty().firstOrDefault("default").subscribe(first -> Log.i("firstObservable2", first.toString()));
     }
 
     private void lastObservable() {
@@ -498,15 +515,19 @@ public class MainActivity2 extends AppCompatActivity {
     private void refCountOperator() {
         ConnectableObservable<Long> observable = Observable.interval(2, TimeUnit.SECONDS).take(5).publish();
 
-        observable.subscribe(o -> Log.i("refCount1", o.toString()), throwable -> {},() -> Log.i("refCount1", "finish"));
+        observable.subscribe(o -> Log.i("refCount1", o.toString()), throwable -> {
+        }, () -> Log.i("refCount1", "finish"));
 
         observable.connect();
 
-        observable.subscribe(o -> Log.i("refCount2", o.toString()), throwable -> {},() -> Log.i("refCount2", "finish"));
-        observable.subscribe(o -> Log.i("refCount3", o.toString()), throwable -> {},() -> Log.i("refCount3", "finish"));
+        observable.subscribe(o -> Log.i("refCount2", o.toString()), throwable -> {
+        }, () -> Log.i("refCount2", "finish"));
+        observable.subscribe(o -> Log.i("refCount3", o.toString()), throwable -> {
+        }, () -> Log.i("refCount3", "finish"));
 
         Observable.timer(7, TimeUnit.SECONDS).subscribe(aLong -> {
-            observable.replay().subscribe(o -> Log.i("refCount4", o.toString()), throwable -> {},() -> Log.i("refCount4", "finish"));
+            observable.replay().subscribe(o -> Log.i("refCount4", o.toString()), throwable -> {
+            }, () -> Log.i("refCount4", "finish"));
         });
 
     }
